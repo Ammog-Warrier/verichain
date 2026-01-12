@@ -9,21 +9,11 @@ const jwt = require('jsonwebtoken');
 const { SECRET_KEY } = require('../middleware/auth');
 
 router.post('/register', async (req, res) => {
-    const { orgName, userId, role } = req.body;
+    const { orgName, userId, adminId, role } = req.body;
     const userRole = role || 'client'; // Default to client if not specified
 
-    if (!orgName || !userId) {
-        return res.status(400).json({ error: 'Missing required fields: orgName, userId' });
-    }
-
-    // Determine admin identity based on Org
-    let adminId;
-    if (orgName === 'Org1') {
-        adminId = 'admin';
-    } else if (orgName === 'Org2') {
-        adminId = 'admin-org2-cert';
-    } else {
-        return res.status(400).json({ error: 'Invalid Organization. Must be Org1 or Org2.' });
+    if (!orgName || !userId || !adminId) {
+        return res.status(400).json({ error: 'Missing required fields: orgName, userId, adminId' });
     }
 
     try {
@@ -84,6 +74,8 @@ router.post('/register', async (req, res) => {
 
         await wallet.put(userId, x509Identity);
 
+        await wallet.put(userId, x509Identity);
+
         // Generate JWT
         const token = jwt.sign({ userId, orgName, role: userRole }, SECRET_KEY, { expiresIn: '1h' });
 
@@ -122,6 +114,10 @@ router.post('/login', async (req, res) => {
         let role = 'client';
         if (userId.toLowerCase().includes('admin')) {
             role = 'admin';
+        } else if (userId.toLowerCase().includes('farmer') || userId.toLowerCase().includes('producer') || userId.toLowerCase().includes('pharma')) {
+            role = 'producer';
+        } else if (userId.toLowerCase().includes('auditor')) {
+            role = 'auditor';
         }
 
         const token = jwt.sign({ userId, orgName, role }, SECRET_KEY, { expiresIn: '1h' });

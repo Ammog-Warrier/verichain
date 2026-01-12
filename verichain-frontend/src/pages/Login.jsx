@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { authAPI } from '../services/api';
 import { LogIn, User, Building2 } from 'lucide-react';
 
 const DEMO_ACCOUNTS = [
-    { label: 'Farmer (Org1)', userId: 'admin', orgName: 'Org1' },
-    { label: 'Pharma (Org2)', userId: 'admin-org2-cert', orgName: 'Org2' }
+    { label: 'Farmer (Org1)', userId: 'farmer-cert', orgName: 'Org1' },
+    { label: 'Pharma (Org2)', userId: 'pharma-cert', orgName: 'Org2' },
+    { label: 'Auditor (Org1)', userId: 'auditor-org1-cert', orgName: 'Org1' },
+    { label: 'Auditor (Org2)', userId: 'auditor-org2-cert', orgName: 'Org2' }
 ];
 
 export default function Login() {
@@ -100,11 +102,6 @@ export default function Login() {
                             <LogIn size={18} />
                             {loading ? 'Signing in...' : 'Sign In'}
                         </button>
-
-                        <div style={{ marginTop: '1rem', textAlign: 'center' }}>
-                            <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>Don't have an account? </span>
-                            <Link to="/register" style={{ fontSize: '0.875rem', fontWeight: 500 }}>Register here</Link>
-                        </div>
                     </form>
 
                     <div style={{ marginTop: '2rem', paddingTop: '2rem', borderTop: '1px solid var(--color-border)' }}>

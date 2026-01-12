@@ -45,9 +45,17 @@ export default function Dashboard() {
                             {isAgri ? 'Agriculture' : 'Pharmaceutical'} Assets · {user?.orgName}
                         </p>
                     </div>
-                    <button className="btn btn-ghost" onClick={loadAssets}>
-                        <RefreshCw size={16} />
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        {isProducer() && (
+                            <Link to="/create" className="btn btn-primary">
+                                <Plus size={18} />
+                                Create Asset
+                            </Link>
+                        )}
+                        <button className="btn btn-ghost" onClick={loadAssets}>
+                            <RefreshCw size={16} />
+                        </button>
+                    </div>
                 </div>
 
                 {error && <div className="alert alert-error">{error}</div>}

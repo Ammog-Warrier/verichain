@@ -114,6 +114,10 @@ router.post('/login', async (req, res) => {
         let role = 'client';
         if (userId.toLowerCase().includes('admin')) {
             role = 'admin';
+        } else if (userId.toLowerCase().includes('farmer') || userId.toLowerCase().includes('producer') || userId.toLowerCase().includes('pharma')) {
+            role = 'producer';
+        } else if (userId.toLowerCase().includes('auditor')) {
+            role = 'auditor';
         }
 
         const token = jwt.sign({ userId, orgName, role }, SECRET_KEY, { expiresIn: '1h' });

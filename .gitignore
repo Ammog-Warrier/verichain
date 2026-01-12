@@ -35,3 +35,4 @@ chaincode/**/dist/
 # API Specific
 verichain-api/node_modules/
 verichain-api/wallet/
+.env

@@ -1,0 +1,37 @@
+# Credentials & Crypto Material
+organizations/peerOrganizations/
+organizations/ordererOrganizations/
+organizations/fabric-ca/*
+!organizations/fabric-ca/registerEnroll.sh
+channel-artifacts/
+system-genesis-block/
+*.block
+wallet/
+keystore/
+
+# Heavy Binary Artifacts
+*.tar.gz
+bin/
+
+# Dependencies
+node_modules/
+.npm/
+
+# Logs & Temp
+log.txt
+*.log
+tmp/
+
+# IDE/System
+.idea/
+.vscode/
+.DS_Store
+
+# Chaincode Specific
+chaincode/**/node_modules/
+chaincode/**/npm-shrinkwrap.json
+chaincode/**/dist/
+
+# API Specific
+verichain-api/node_modules/
+verichain-api/wallet/

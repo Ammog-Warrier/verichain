@@ -8,8 +8,8 @@
 # Script to setup VeriChain 4-Org Consortium Network
 
 ROOTDIR=$(cd "$(dirname "$0")" && pwd)
-export PATH=${ROOTDIR}/bin:${PWD}/bin:$PATH
-export FABRIC_CFG_PATH=${PWD}/configtx
+export PATH="${ROOTDIR}/bin:${PWD}/bin:$PATH"
+export FABRIC_CFG_PATH="${PWD}/config"
 export VERBOSE=true
 
 . scripts/utils.sh

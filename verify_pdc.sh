@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Setup
-export PATH=${PWD}/bin:$PATH
-export FABRIC_CFG_PATH=${PWD}/config/
+export PATH="${PWD}/bin:$PATH"
+export FABRIC_CFG_PATH="${PWD}/config/"
 source scripts/utils.sh
 . scripts/envVar.sh
 
@@ -26,7 +26,7 @@ ASSET_PROPERTIES_PHARMA_BASE64=$(echo -n "$ASSET_PROPERTIES_PHARMA" | base64 | t
 # 1. Org1 Creates Asset in AgriCollection
 infoln "Test 1: Org1 creating asset in AgriCollection..."
 setGlobals 1
-peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile $ORDERER_CA -C verichain-channel -n verichain-contract --peerAddresses localhost:7051 --tlsRootCertFiles $PEER0_ORG1_CA --peerAddresses localhost:9051 --tlsRootCertFiles $PEER0_ORG2_CA -c '{"function":"CreatePrivateAsset","Args":[]}' --transient "{\"asset_properties\":\"$ASSET_PROPERTIES_AGRI_BASE64\"}"
+peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile "$ORDERER_CA" -C verichain-channel -n verichain-contract --peerAddresses localhost:7051 --tlsRootCertFiles "$PEER0_ORG1_CA" --peerAddresses localhost:9051 --tlsRootCertFiles "$PEER0_ORG2_CA" -c '{"function":"CreatePrivateAsset","Args":[]}' --transient "{\"asset_properties\":\"$ASSET_PROPERTIES_AGRI_BASE64\"}"
 if [ $? -eq 0 ]; then
   successln "Org1 created private asset successfully"
 else
@@ -73,7 +73,7 @@ fi
 
 # 5. Org2 Creates Asset in PharmaCollection
 infoln "Test 5: Org2 creating asset in PharmaCollection..."
-peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile $ORDERER_CA -C verichain-channel -n verichain-contract --peerAddresses localhost:7051 --tlsRootCertFiles $PEER0_ORG1_CA --peerAddresses localhost:9051 --tlsRootCertFiles $PEER0_ORG2_CA -c '{"function":"CreatePrivateAsset","Args":[]}' --transient "{\"asset_properties\":\"$ASSET_PROPERTIES_PHARMA_BASE64\"}"
+peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile "$ORDERER_CA" -C verichain-channel -n verichain-contract --peerAddresses localhost:7051 --tlsRootCertFiles "$PEER0_ORG1_CA" --peerAddresses localhost:9051 --tlsRootCertFiles "$PEER0_ORG2_CA" -c '{"function":"CreatePrivateAsset","Args":[]}' --transient "{\"asset_properties\":\"$ASSET_PROPERTIES_PHARMA_BASE64\"}"
 if [ $? -eq 0 ]; then
   successln "Org2 created private asset successfully"
 else

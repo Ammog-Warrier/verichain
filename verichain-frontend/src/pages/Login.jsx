@@ -5,10 +5,12 @@ import { authAPI } from '../services/api';
 import { LogIn, User, Building2 } from 'lucide-react';
 
 const DEMO_ACCOUNTS = [
-    { label: 'Farmer (Org1)', userId: 'farmer-cert', orgName: 'Org1' },
-    { label: 'Pharma (Org2)', userId: 'pharma-cert', orgName: 'Org2' },
-    { label: 'Auditor (Org1)', userId: 'auditor-org1-cert', orgName: 'Org1' },
-    { label: 'Auditor (Org2)', userId: 'auditor-org2-cert', orgName: 'Org2' }
+    { label: 'Pharma1 Producer', userId: 'pharma1-cert', orgName: 'Org1' },
+    { label: 'Pharma2 Producer', userId: 'pharma2-cert', orgName: 'Org2' },
+    { label: 'Distributor (Org3)', userId: 'distributor-cert', orgName: 'Org3' },
+    { label: 'Retailer (Org4)', userId: 'retailer-cert', orgName: 'Org4' },
+    { label: 'Pharma1 Auditor', userId: 'auditor-org1-cert', orgName: 'Org1' },
+    { label: 'Pharma2 Auditor', userId: 'auditor-org2-cert', orgName: 'Org2' }
 ];
 
 export default function Login() {

@@ -3,7 +3,7 @@ const router = express.Router();
 const { connectToNetwork } = require('../utils/gateway');
 const { authenticateToken } = require('../middleware/auth');
 
-// Create a private asset (Agri or Pharma based on org)
+// Create a private asset (Unified Pharma Schema for both orgs)
 router.post('/', authenticateToken, async (req, res) => {
     const { userId, orgName } = req.user;
     const { assetId, status } = req.body;
@@ -12,46 +12,29 @@ router.post('/', authenticateToken, async (req, res) => {
         return res.status(400).json({ error: 'Missing required field: assetId' });
     }
 
-    let assetData = {
+    // Unified Pharmaceutical Asset Schema for both Pharma1 and Pharma2
+    const assetData = {
         ID: assetId,
-        status: status
+        status: status || 'MANUFACTURED',
+        // Drug Information
+        drugName: req.body.drugName,
+        genericName: req.body.genericName,
+        dosageForm: req.body.dosageForm,
+        strength: req.body.strength,
+        // Manufacturing
+        manufacturer: req.body.manufacturer,
+        facilityLocation: req.body.facilityLocation,
+        batchSize: req.body.batchSize,
+        mfgDate: req.body.mfgDate,
+        expiryDate: req.body.expiryDate,
+        // Compliance
+        cdscoLicenseNo: req.body.cdscoLicenseNo,
+        labTestResult: req.body.labTestResult,
+        productionCost: req.body.productionCost
     };
 
-    // Extract fields based on Organization
-    if (orgName === 'Org1') {
-        // Agriculture Schema
-        assetData = {
-            ...assetData,
-            cropType: req.body.cropType,
-            variety: req.body.variety,
-            harvestDate: req.body.harvestDate,
-            farmLocation: req.body.farmLocation,
-            farmerName: req.body.farmerName,
-            quantity: req.body.quantity,
-            organicCertified: req.body.organicCertified,
-            fertilizersUsed: req.body.fertilizersUsed,
-            pesticideCompliance: req.body.pesticideCompliance,
-            soilPH: req.body.soilPH,
-            estimatedValue: req.body.estimatedValue
-        };
-    } else if (orgName === 'Org2') {
-        // Pharmaceutical Schema
-        assetData = {
-            ...assetData,
-            drugName: req.body.drugName,
-            genericName: req.body.genericName,
-            dosageForm: req.body.dosageForm,
-            strength: req.body.strength,
-            mfgDate: req.body.mfgDate,
-            expiryDate: req.body.expiryDate,
-            batchSize: req.body.batchSize,
-            manufacturer: req.body.manufacturer,
-            facilityLocation: req.body.facilityLocation,
-            labTestResult: req.body.labTestResult,
-            cdscoLicenseNo: req.body.cdscoLicenseNo,
-            productionCost: req.body.productionCost
-        };
-    } else {
+    const allowedOrgs = ['Org1', 'Org2', 'Org3', 'Org4'];
+    if (!allowedOrgs.includes(orgName)) {
         return res.status(400).json({ error: `Organization ${orgName} is not authorized to create assets.` });
     }
 

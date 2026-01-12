@@ -49,11 +49,17 @@ export function AuthProvider({ children }) {
 
     const getCollection = () => {
         if (!user) return null;
-        return user.orgName === 'Org1' ? 'AgriCollection' : 'PharmaCollection';
+        const collectionMap = {
+            'Org1': 'Pharma1Collection',
+            'Org2': 'Pharma2Collection',
+            'Org3': 'DistributorCollection',
+            'Org4': 'RetailerCollection'
+        };
+        return collectionMap[user.orgName] || 'Pharma1Collection';
     };
 
     const isProducer = () => {
-        return user?.role === 'admin' || user?.role === 'producer';
+        return user?.role === 'admin' || user?.role === 'producer' || user?.role === 'distributor' || user?.role === 'retailer';
     };
 
     return (

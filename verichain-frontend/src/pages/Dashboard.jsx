@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { assetsAPI } from '../services/api';
-import { Plus, Package, Leaf, Pill, RefreshCw } from 'lucide-react';
+import { Plus, Package, Pill, RefreshCw } from 'lucide-react';
 
 export default function Dashboard() {
     const { user, getCollection, isProducer } = useAuth();
@@ -10,7 +10,7 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    const isAgri = user?.orgName === 'Org1';
+    const isPharma1 = user?.orgName === 'Org1';
     const collection = getCollection();
 
     // Note: Backend doesn't have a "list all assets" endpoint yet
@@ -42,7 +42,7 @@ export default function Dashboard() {
                     <div>
                         <h1 className="page-title">Dashboard</h1>
                         <p className="page-subtitle">
-                            {isAgri ? 'Agriculture' : 'Pharmaceutical'} Assets · {user?.orgName}
+                            {isPharma1 ? 'Pharma1' : 'Pharma2'} Assets · {user?.orgName}
                         </p>
                     </div>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -63,7 +63,7 @@ export default function Dashboard() {
                 {assets.length === 0 ? (
                     <div className="empty-state">
                         <div className="empty-state-icon">
-                            {isAgri ? <Leaf size={48} /> : <Pill size={48} />}
+                            <Pill size={48} />
                         </div>
                         <h3 className="empty-state-title">No assets yet</h3>
                         <p>Create your first asset to get started.</p>
@@ -83,7 +83,7 @@ export default function Dashboard() {
                                         <div>
                                             <div className="asset-id">{asset.ID || asset.assetId}</div>
                                             <div className="asset-type">
-                                                {isAgri ? asset.cropType || 'Agri' : asset.drugName || 'Pharma'}
+                                                {asset.drugName || 'Pharma Drug'}
                                             </div>
                                         </div>
                                         <span className={`badge ${asset.status === 'HARVESTED' || asset.status === 'MANUFACTURED' ? 'badge-success' : 'badge-neutral'}`}>
@@ -91,17 +91,8 @@ export default function Dashboard() {
                                         </span>
                                     </div>
                                     <div className="asset-card-body">
-                                        {isAgri ? (
-                                            <>
-                                                {asset.farmLocation && <div>📍 {asset.farmLocation}</div>}
-                                                {asset.quantity && <div>📦 {asset.quantity} units</div>}
-                                            </>
-                                        ) : (
-                                            <>
-                                                {asset.manufacturer && <div>🏭 {asset.manufacturer}</div>}
-                                                {asset.batchSize && <div>📦 {asset.batchSize} units</div>}
-                                            </>
-                                        )}
+                                        {asset.manufacturer && <div>🏭 {asset.manufacturer}</div>}
+                                        {asset.batchSize && <div>📦 {asset.batchSize} units</div>}
                                     </div>
                                 </div>
                             </Link>

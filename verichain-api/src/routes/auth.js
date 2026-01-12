@@ -116,6 +116,10 @@ router.post('/login', async (req, res) => {
             role = 'admin';
         } else if (userId.toLowerCase().includes('farmer') || userId.toLowerCase().includes('producer') || userId.toLowerCase().includes('pharma')) {
             role = 'producer';
+        } else if (userId.toLowerCase().includes('distributor')) {
+            role = 'distributor';
+        } else if (userId.toLowerCase().includes('retailer')) {
+            role = 'retailer';
         } else if (userId.toLowerCase().includes('auditor')) {
             role = 'auditor';
         }

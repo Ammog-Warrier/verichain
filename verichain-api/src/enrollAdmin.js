@@ -35,7 +35,8 @@ async function main() {
         }
 
         // Enroll the admin user, and import the new identity into the wallet.
-        const enrollment = await ca.enroll({ enrollmentID: 'admin', enrollmentSecret: 'adminpw' });
+        const adminPassword = process.env.ADMIN_PASSWORD || 'adminpw';
+        const enrollment = await ca.enroll({ enrollmentID: 'admin', enrollmentSecret: adminPassword });
         const x509Identity = {
             credentials: {
                 certificate: enrollment.certificate,

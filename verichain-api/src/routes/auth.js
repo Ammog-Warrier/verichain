@@ -105,8 +105,8 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ error: 'User not found in wallet. Please register first.' });
         }
 
-        // In a real app, we would verify a password here.
-        // For this POC, existence in the wallet is enough.
+        // TODO: Integrate with a secure password store or identity provider for password verification.
+        // Currently relying on wallet identity existence.
 
         // We assume role is 'client' for existing users if not stored, 
         // but ideally we should store user metadata separately.

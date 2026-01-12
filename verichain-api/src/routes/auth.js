@@ -9,11 +9,21 @@ const jwt = require('jsonwebtoken');
 const { SECRET_KEY } = require('../middleware/auth');
 
 router.post('/register', async (req, res) => {
-    const { orgName, userId, adminId, role } = req.body;
+    const { orgName, userId, role } = req.body;
     const userRole = role || 'client'; // Default to client if not specified
 
-    if (!orgName || !userId || !adminId) {
-        return res.status(400).json({ error: 'Missing required fields: orgName, userId, adminId' });
+    if (!orgName || !userId) {
+        return res.status(400).json({ error: 'Missing required fields: orgName, userId' });
+    }
+
+    // Determine admin identity based on Org
+    let adminId;
+    if (orgName === 'Org1') {
+        adminId = 'admin';
+    } else if (orgName === 'Org2') {
+        adminId = 'admin-org2-cert';
+    } else {
+        return res.status(400).json({ error: 'Invalid Organization. Must be Org1 or Org2.' });
     }
 
     try {
@@ -71,8 +81,6 @@ router.post('/register', async (req, res) => {
             mspId: `${orgName}MSP`,
             type: 'X.509',
         };
-
-        await wallet.put(userId, x509Identity);
 
         await wallet.put(userId, x509Identity);
 

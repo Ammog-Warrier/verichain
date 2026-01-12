@@ -30,7 +30,7 @@ api.interceptors.response.use(
 
 export const authAPI = {
     login: (userId, orgName) => api.post('/login', { userId, orgName }),
-    register: (userId, orgName, role, adminId) => api.post('/register', { userId, orgName, role, adminId })
+    register: (userId, orgName, role) => api.post('/register', { userId, orgName, role })
 };
 
 export const assetsAPI = {

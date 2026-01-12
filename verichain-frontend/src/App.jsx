@@ -4,6 +4,7 @@ import Header from './components/Header';
 import { PrivateRoute, ProducerRoute } from './components/ProtectedRoute';
 import Home from './pages/Home';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import CreateAsset from './pages/CreateAsset';
 import AssetDetail from './pages/AssetDetail';
@@ -19,6 +20,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
             <Route path="/verify" element={<Verify />} />
             <Route path="/verify/:assetId" element={<Verify />} />
 

@@ -89,6 +89,7 @@ class AssetTransfer extends Contract {
     }
 
     // CreatePrivateAsset creates a new asset in a private data collection
+    // Supports both Agri (Org1) and Pharma (Org2) schemas
     async CreatePrivateAsset(ctx) {
         const transientData = ctx.stub.getTransient();
         if (transientData.size === 0) {
@@ -104,28 +105,51 @@ class AssetTransfer extends Contract {
 
         const mspID = ctx.clientIdentity.getMSPID();
         let collection = '';
+        let asset = {};
 
-        // Configure collections based on MSP ID
+        // Configure collections and schema based on MSP ID
         if (mspID === 'Org1MSP') {
+            // Agriculture Schema
             collection = 'AgriCollection';
+            asset = {
+                ID: assetInput.ID,
+                docType: 'agri',
+                cropType: assetInput.cropType || '',
+                variety: assetInput.variety || '',
+                harvestDate: assetInput.harvestDate || '',
+                farmLocation: assetInput.farmLocation || '',
+                farmerName: assetInput.farmerName || '',
+                quantity: Number(assetInput.quantity) || 0,
+                organicCertified: assetInput.organicCertified || false,
+                fertilizersUsed: assetInput.fertilizersUsed || '',
+                pesticideCompliance: assetInput.pesticideCompliance || '',
+                soilPH: Number(assetInput.soilPH) || 0,
+                estimatedValue: Number(assetInput.estimatedValue) || 0,
+                status: assetInput.status || 'HARVESTED'
+            };
         } else if (mspID === 'Org2MSP') {
+            // Pharmaceutical Schema
             collection = 'PharmaCollection';
+            asset = {
+                ID: assetInput.ID,
+                docType: 'pharma',
+                drugName: assetInput.drugName || '',
+                genericName: assetInput.genericName || '',
+                dosageForm: assetInput.dosageForm || '',
+                strength: assetInput.strength || '',
+                mfgDate: assetInput.mfgDate || '',
+                expiryDate: assetInput.expiryDate || '',
+                batchSize: Number(assetInput.batchSize) || 0,
+                manufacturer: assetInput.manufacturer || '',
+                facilityLocation: assetInput.facilityLocation || '',
+                labTestResult: assetInput.labTestResult || '',
+                cdscoLicenseNo: assetInput.cdscoLicenseNo || '',
+                productionCost: Number(assetInput.productionCost) || 0,
+                status: assetInput.status || 'MANUFACTURED'
+            };
         } else {
-            // Org3 and Org4 are auditors/regulators in this scenario, or just not creators
             throw new Error(`MSP ${mspID} is not authorized to create private assets in this workflow`);
         }
-
-        const asset = {
-            ID: assetInput.ID,
-            Color: assetInput.Color,
-            Size: Number(assetInput.Size),
-            Owner: assetInput.Owner,
-            AppraisedValue: Number(assetInput.AppraisedValue),
-        };
-
-        // Check if asset already exists in the private collection (optional, but good practice)
-        // Note: checking private data existence might reveal information if not careful, but usually required to prevent overwrite.
-        // For simplicity in this task, we'll proceed to write.
 
         // Write to private data collection
         await ctx.stub.putPrivateData(collection, asset.ID, Buffer.from(stringify(sortKeysRecursive(asset))));
@@ -133,7 +157,8 @@ class AssetTransfer extends Contract {
         // Write public summary to world state
         const summary = {
             ID: asset.ID,
-            Status: 'Private Asset Created',
+            docType: asset.docType,
+            Status: asset.status,
             Collection: collection,
             Submitter: mspID
         };

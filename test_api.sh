@@ -55,11 +55,14 @@ RESPONSE=$(curl -s -X POST "$API_URL/assets" \
   -H "Authorization: Bearer $TOKEN" \
   -d "{
     \"assetId\": \"$ASSET_ID\",
-    \"color\": \"green\",
-    \"size\": 20,
-    \"owner\": \"FarmerJohn\",
-    \"appraisedValue\": 500,
-    \"collection\": \"$COLLECTION\"
+    \"cropType\": \"Sweet Corn\",
+    \"variety\": \"Golden Jubilee\",
+    \"harvestDate\": \"2024-10-15\",
+    \"farmLocation\": \"Nashik\",
+    \"farmerName\": \"FarmerJohn\",
+    \"quantity\": 5000,
+    \"organicCertified\": true,
+    \"status\": \"HARVESTED\"
   }")
 
 echo "Response: $RESPONSE"

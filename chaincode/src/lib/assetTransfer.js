@@ -14,81 +14,34 @@ const { Contract } = require('fabric-contract-api');
 class AssetTransfer extends Contract {
 
     async InitLedger(ctx) {
-        const assets = [
-            {
-                ID: 'asset1',
-                Color: 'blue',
-                Size: 5,
-                Owner: 'Tomoko',
-                AppraisedValue: 300,
-            },
-            {
-                ID: 'asset2',
-                Color: 'red',
-                Size: 5,
-                Owner: 'Brad',
-                AppraisedValue: 400,
-            },
-            {
-                ID: 'asset3',
-                Color: 'green',
-                Size: 10,
-                Owner: 'Jin Soo',
-                AppraisedValue: 500,
-            },
-            {
-                ID: 'asset4',
-                Color: 'yellow',
-                Size: 10,
-                Owner: 'Max',
-                AppraisedValue: 600,
-            },
-            {
-                ID: 'asset5',
-                Color: 'black',
-                Size: 15,
-                Owner: 'Adriana',
-                AppraisedValue: 700,
-            },
-            {
-                ID: 'asset6',
-                Color: 'white',
-                Size: 15,
-                Owner: 'Michel',
-                AppraisedValue: 800,
-            },
-        ];
-
-        for (const asset of assets) {
-            asset.docType = 'asset';
-            // example of how to write to world state deterministically
-            // use convetion of alphabetic order
-            // we insert data in alphabetic order using 'json-stringify-deterministic' and 'sort-keys-recursive'
-            // when retrieving data, in any lang, the order of data will be the same and consequently also the corresonding hash
-            await ctx.stub.putState(asset.ID, Buffer.from(stringify(sortKeysRecursive(asset))));
-        }
+        // Ledger initialization is empty to avoid hardcoded/mock data.
+        // Assets should be created dynamically via CreateAsset or CreatePrivateAsset.
+        console.log('InitLedger: Ledger initialized without default assets.');
     }
 
     // CreateAsset issues a new asset to the world state with given details.
-    async CreateAsset(ctx, id, color, size, owner, appraisedValue) {
+    // Updated to accept a generic JSON object to support flexible schemas
+    async CreateAsset(ctx, id, data) {
         const exists = await this.AssetExists(ctx, id);
         if (exists) {
             throw new Error(`The asset ${id} already exists`);
         }
 
-        const asset = {
-            ID: id,
-            Color: color,
-            Size: Number(size),
-            Owner: owner,
-            AppraisedValue: Number(appraisedValue),
-        };
-        // we insert data in alphabetic order using 'json-stringify-deterministic' and 'sort-keys-recursive'
+        let asset = {};
+        try {
+            asset = JSON.parse(data);
+        } catch (err) {
+            throw new Error('Data must be a valid JSON string');
+        }
+
+        asset.ID = id;
+
         await ctx.stub.putState(id, Buffer.from(stringify(sortKeysRecursive(asset))));
         return JSON.stringify(asset);
     }
 
     // CreatePrivateAsset creates a new asset in a private data collection
+    // Supports both Agri (Org1) and Pharma (Org2) schemas
     async CreatePrivateAsset(ctx) {
         const transientData = ctx.stub.getTransient();
         if (transientData.size === 0) {
@@ -104,28 +57,51 @@ class AssetTransfer extends Contract {
 
         const mspID = ctx.clientIdentity.getMSPID();
         let collection = '';
+        let asset = {};
 
-        // Configure collections based on MSP ID
+        // Configure collections and schema based on MSP ID
         if (mspID === 'Org1MSP') {
+            // Agriculture Schema
             collection = 'AgriCollection';
+            asset = {
+                ID: assetInput.ID,
+                docType: 'agri',
+                cropType: assetInput.cropType || '',
+                variety: assetInput.variety || '',
+                harvestDate: assetInput.harvestDate || '',
+                farmLocation: assetInput.farmLocation || '',
+                farmerName: assetInput.farmerName || '',
+                quantity: Number(assetInput.quantity) || 0,
+                organicCertified: assetInput.organicCertified || false,
+                fertilizersUsed: assetInput.fertilizersUsed || '',
+                pesticideCompliance: assetInput.pesticideCompliance || '',
+                soilPH: Number(assetInput.soilPH) || 0,
+                estimatedValue: Number(assetInput.estimatedValue) || 0,
+                status: assetInput.status || 'HARVESTED'
+            };
         } else if (mspID === 'Org2MSP') {
+            // Pharmaceutical Schema
             collection = 'PharmaCollection';
+            asset = {
+                ID: assetInput.ID,
+                docType: 'pharma',
+                drugName: assetInput.drugName || '',
+                genericName: assetInput.genericName || '',
+                dosageForm: assetInput.dosageForm || '',
+                strength: assetInput.strength || '',
+                mfgDate: assetInput.mfgDate || '',
+                expiryDate: assetInput.expiryDate || '',
+                batchSize: Number(assetInput.batchSize) || 0,
+                manufacturer: assetInput.manufacturer || '',
+                facilityLocation: assetInput.facilityLocation || '',
+                labTestResult: assetInput.labTestResult || '',
+                cdscoLicenseNo: assetInput.cdscoLicenseNo || '',
+                productionCost: Number(assetInput.productionCost) || 0,
+                status: assetInput.status || 'MANUFACTURED'
+            };
         } else {
-            // Org3 and Org4 are auditors/regulators in this scenario, or just not creators
             throw new Error(`MSP ${mspID} is not authorized to create private assets in this workflow`);
         }
-
-        const asset = {
-            ID: assetInput.ID,
-            Color: assetInput.Color,
-            Size: Number(assetInput.Size),
-            Owner: assetInput.Owner,
-            AppraisedValue: Number(assetInput.AppraisedValue),
-        };
-
-        // Check if asset already exists in the private collection (optional, but good practice)
-        // Note: checking private data existence might reveal information if not careful, but usually required to prevent overwrite.
-        // For simplicity in this task, we'll proceed to write.
 
         // Write to private data collection
         await ctx.stub.putPrivateData(collection, asset.ID, Buffer.from(stringify(sortKeysRecursive(asset))));
@@ -133,7 +109,8 @@ class AssetTransfer extends Contract {
         // Write public summary to world state
         const summary = {
             ID: asset.ID,
-            Status: 'Private Asset Created',
+            docType: asset.docType,
+            Status: asset.status,
             Collection: collection,
             Submitter: mspID
         };
@@ -161,21 +138,21 @@ class AssetTransfer extends Contract {
     }
 
     // UpdateAsset updates an existing asset in the world state with provided parameters.
-    async UpdateAsset(ctx, id, color, size, owner, appraisedValue) {
+    async UpdateAsset(ctx, id, data) {
         const exists = await this.AssetExists(ctx, id);
         if (!exists) {
             throw new Error(`The asset ${id} does not exist`);
         }
 
-        // overwriting original asset with new asset
-        const updatedAsset = {
-            ID: id,
-            Color: color,
-            Size: size,
-            Owner: owner,
-            AppraisedValue: appraisedValue,
-        };
-        // we insert data in alphabetic order using 'json-stringify-deterministic' and 'sort-keys-recursive'
+        let updatedAsset = {};
+        try {
+            updatedAsset = JSON.parse(data);
+        } catch (err) {
+            throw new Error('Data must be a valid JSON string');
+        }
+
+        updatedAsset.ID = id;
+
         return ctx.stub.putState(id, Buffer.from(stringify(sortKeysRecursive(updatedAsset))));
     }
 

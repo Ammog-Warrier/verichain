@@ -3,45 +3,77 @@ const router = express.Router();
 const { connectToNetwork } = require('../utils/gateway');
 const { authenticateToken } = require('../middleware/auth');
 
-// Create a private asset
+// Create a private asset (Agri or Pharma based on org)
 router.post('/', authenticateToken, async (req, res) => {
-    const { assetId, color, size, owner, appraisedValue, collection } = req.body;
     const { userId, orgName } = req.user;
+    const { assetId, status } = req.body;
 
-    if (!assetId || !collection) {
-        return res.status(400).json({ error: 'Missing required fields' });
+    if (!assetId) {
+        return res.status(400).json({ error: 'Missing required field: assetId' });
+    }
+
+    let assetData = {
+        ID: assetId,
+        status: status
+    };
+
+    // Extract fields based on Organization
+    if (orgName === 'Org1') {
+        // Agriculture Schema
+        assetData = {
+            ...assetData,
+            cropType: req.body.cropType,
+            variety: req.body.variety,
+            harvestDate: req.body.harvestDate,
+            farmLocation: req.body.farmLocation,
+            farmerName: req.body.farmerName,
+            quantity: req.body.quantity,
+            organicCertified: req.body.organicCertified,
+            fertilizersUsed: req.body.fertilizersUsed,
+            pesticideCompliance: req.body.pesticideCompliance,
+            soilPH: req.body.soilPH,
+            estimatedValue: req.body.estimatedValue
+        };
+    } else if (orgName === 'Org2') {
+        // Pharmaceutical Schema
+        assetData = {
+            ...assetData,
+            drugName: req.body.drugName,
+            genericName: req.body.genericName,
+            dosageForm: req.body.dosageForm,
+            strength: req.body.strength,
+            mfgDate: req.body.mfgDate,
+            expiryDate: req.body.expiryDate,
+            batchSize: req.body.batchSize,
+            manufacturer: req.body.manufacturer,
+            facilityLocation: req.body.facilityLocation,
+            labTestResult: req.body.labTestResult,
+            cdscoLicenseNo: req.body.cdscoLicenseNo,
+            productionCost: req.body.productionCost
+        };
+    } else {
+        return res.status(400).json({ error: `Organization ${orgName} is not authorized to create assets.` });
     }
 
     try {
         const { gateway, contract } = await connectToNetwork(orgName, userId);
 
-        const assetData = {
-            ID: assetId,
-            Color: color,
-            Size: size,
-            Owner: owner,
-            AppraisedValue: appraisedValue
-        };
-
         const assetDataString = JSON.stringify(assetData);
         const assetDataBuffer = Buffer.from(assetDataString);
-        const assetDataInfo = Buffer.from(JSON.stringify({ asset_properties: assetDataBuffer.toString('base64') }));
 
         const transientData = {
             asset_properties: assetDataBuffer
         };
 
-        console.log(`Submitting CreatePrivateAsset transaction for ${assetId}...`);
+        console.log(`Submitting CreatePrivateAsset transaction for ${assetData.ID} as ${orgName}...`);
 
-        // Note: The chaincode expects transient data with key 'asset_properties'
-        // The value should be the JSON string of the asset properties
         await contract.createTransaction('CreatePrivateAsset')
             .setTransient(transientData)
             .submit();
 
         await gateway.disconnect();
 
-        res.status(201).json({ message: `Asset ${assetId} created successfully in ${collection}` });
+        res.status(201).json({ message: `Asset ${assetData.ID} created successfully`, assetId: assetData.ID });
 
     } catch (error) {
         console.error(`Failed to create asset: ${error}`);

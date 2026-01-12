@@ -17,8 +17,8 @@ sleep 5
 ASSET_ID_AGRI="private_asset_org1_$(date +%s)"
 ASSET_ID_PHARMA="private_asset_org2_$(date +%s)"
 
-ASSET_PROPERTIES_AGRI="{\"ID\": \"$ASSET_ID_AGRI\", \"Color\": \"blue\", \"Size\": 35, \"Owner\": \"AgriUser\", \"AppraisedValue\": 100}"
-ASSET_PROPERTIES_PHARMA="{\"ID\": \"$ASSET_ID_PHARMA\", \"Color\": \"red\", \"Size\": 50, \"Owner\": \"PharmaUser\", \"AppraisedValue\": 200}"
+ASSET_PROPERTIES_AGRI="{\"ID\": \"$ASSET_ID_AGRI\", \"cropType\": \"Wheat\", \"variety\": \"Lokwan\", \"harvestDate\": \"2024-04-01\", \"farmLocation\": \"Punjab\", \"farmerName\": \"AgriUser\", \"quantity\": 1000, \"status\": \"HARVESTED\"}"
+ASSET_PROPERTIES_PHARMA="{\"ID\": \"$ASSET_ID_PHARMA\", \"drugName\": \"Paracetamol\", \"genericName\": \"Acetaminophen\", \"dosageForm\": \"Tablet\", \"strength\": \"500mg\", \"mfgDate\": \"2024-01-01\", \"expiryDate\": \"2026-01-01\", \"batchSize\": 10000, \"manufacturer\": \"PharmaUser\", \"status\": \"MANUFACTURED\"}"
 
 ASSET_PROPERTIES_AGRI_BASE64=$(echo -n "$ASSET_PROPERTIES_AGRI" | base64 | tr -d \\n)
 ASSET_PROPERTIES_PHARMA_BASE64=$(echo -n "$ASSET_PROPERTIES_PHARMA" | base64 | tr -d \\n)

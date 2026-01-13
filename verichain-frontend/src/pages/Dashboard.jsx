@@ -91,8 +91,8 @@ export default function Dashboard() {
                                         </span>
                                     </div>
                                     <div className="asset-card-body">
-                                        {asset.manufacturer && <div>🏭 {asset.manufacturer}</div>}
-                                        {asset.batchSize && <div>📦 {asset.batchSize} units</div>}
+                                        {asset.manufacturer && <div>Manufacturer: {asset.manufacturer}</div>}
+                                        {asset.batchSize && <div>Batch Size: {asset.batchSize} units</div>}
                                     </div>
                                 </div>
                             </Link>

@@ -15,6 +15,6 @@
         "fabric-ca-client": "^2.2.0",
         "fabric-network": "^2.2.0",
         "jsonwebtoken": "^9.0.3",
-        "snarkjs": "^0.7.0"
+        "snarkjs": "^0.7.6"
     }
 }

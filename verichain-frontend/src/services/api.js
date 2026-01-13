@@ -39,4 +39,13 @@ export const assetsAPI = {
     getPublic: (id) => api.get(`/assets/public/${id}`)
 };
 
+export const transitAPI = {
+    simulate: (batchId, scenario = 'normal') => api.post('/transit/simulate', { batchId, scenario }),
+    generateProof: (batchId) => api.post('/transit/generate-proof', { batchId }),
+    verify: (batchId, proofHash) => api.post('/transit/verify', { batchId, proofHash }),
+    getTransit: (batchId) => api.get(`/transit/${batchId}`),
+    publicVerify: (batchId) => api.get(`/transit/public/${batchId}`)
+};
+
 export default api;
+

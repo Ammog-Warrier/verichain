@@ -193,6 +193,54 @@ class AssetTransfer extends Contract {
         }
         return JSON.stringify(allResults);
     }
+
+    // UpdateAssetStatus updates the status of an asset (e.g., MANUFACTURED -> IN_TRANSIT -> STOCKED)
+    async UpdateAssetStatus(ctx, id, newStatus) {
+        const assetString = await this.ReadAsset(ctx, id);
+        const asset = JSON.parse(assetString);
+        const oldStatus = asset.Status || asset.status;
+        asset.Status = newStatus;
+        asset.status = newStatus;
+        asset.lastUpdated = new Date().toISOString();
+        await ctx.stub.putState(id, Buffer.from(stringify(sortKeysRecursive(asset))));
+        console.log(`Asset ${id} status updated: ${oldStatus} -> ${newStatus}`);
+        return JSON.stringify({ id, oldStatus, newStatus });
+    }
+
+    // AnchorProofHash stores a ZK proof hash on an asset for verification
+    async AnchorProofHash(ctx, id, proofHash, proofType) {
+        const assetString = await this.ReadAsset(ctx, id);
+        const asset = JSON.parse(assetString);
+        asset.proofHash = proofHash;
+        asset.proofType = proofType || 'thermal_compliance';
+        asset.proofAnchoredAt = new Date().toISOString();
+        await ctx.stub.putState(id, Buffer.from(stringify(sortKeysRecursive(asset))));
+        console.log(`Proof anchored on asset ${id}: ${proofHash.slice(0, 20)}...`);
+        return JSON.stringify({ id, proofHash, proofType: asset.proofType });
+    }
+
+    // GetAssetsByStatus returns all assets with a specific status
+    async GetAssetsByStatus(ctx, status) {
+        const queryString = {
+            selector: {
+                Status: status
+            }
+        };
+        const iterator = await ctx.stub.getQueryResult(JSON.stringify(queryString));
+        const results = [];
+        let result = await iterator.next();
+        while (!result.done) {
+            const strValue = Buffer.from(result.value.value.toString()).toString('utf8');
+            try {
+                results.push(JSON.parse(strValue));
+            } catch (err) {
+                console.log(err);
+            }
+            result = await iterator.next();
+        }
+        return JSON.stringify(results);
+    }
 }
 
 module.exports = AssetTransfer;
+

@@ -1,12 +1,16 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Shield, LayoutDashboard, LogOut, Package } from 'lucide-react';
+import { Shield, LayoutDashboard, LogOut, Package, Building2, ShoppingBag, Globe } from 'lucide-react';
 
 export default function Header() {
     const { user, logout } = useAuth();
     const location = useLocation();
 
-    const isActive = (path) => location.pathname === path;
+    const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
+
+    // Determine user role for conditional nav items
+    const isPharmaOrDistributor = user?.orgName === 'Org1' || user?.orgName === 'Org2' || user?.orgName === 'Org3';
+    const isRetailer = user?.orgName === 'Org4';
 
     return (
         <header className="header">
@@ -20,17 +24,32 @@ export default function Header() {
                     </Link>
 
                     <nav className="nav">
-                        <Link to="/verify" className={`nav-link ${isActive('/verify') ? 'active' : ''}`}>
-                            <Package size={16} style={{ marginRight: '0.25rem' }} />
-                            Verify
+                        <Link to="/public" className={`nav-link ${isActive('/public') ? 'active' : ''}`}>
+                            <Globe size={16} style={{ marginRight: '0.25rem' }} />
+                            Public Verify
                         </Link>
 
                         {user ? (
                             <>
+                                {isPharmaOrDistributor && (
+                                    <Link to="/portal" className={`nav-link ${isActive('/portal') ? 'active' : ''}`}>
+                                        <Building2 size={16} style={{ marginRight: '0.25rem' }} />
+                                        Business Portal
+                                    </Link>
+                                )}
+
+                                {(isRetailer || isPharmaOrDistributor) && (
+                                    <Link to="/retailer" className={`nav-link ${isActive('/retailer') ? 'active' : ''}`}>
+                                        <ShoppingBag size={16} style={{ marginRight: '0.25rem' }} />
+                                        Retailer
+                                    </Link>
+                                )}
+
                                 <Link to="/dashboard" className={`nav-link ${isActive('/dashboard') ? 'active' : ''}`}>
                                     <LayoutDashboard size={16} style={{ marginRight: '0.25rem' }} />
                                     Dashboard
                                 </Link>
+
                                 <div className="user-menu">
                                     <div className="user-info">
                                         <div className="user-name">{user.userId}</div>

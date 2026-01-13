@@ -95,8 +95,10 @@ export default function Login() {
                                 value={orgName}
                                 onChange={(e) => setOrgName(e.target.value)}
                             >
-                                <option value="Org1">Org1 - Agriculture</option>
-                                <option value="Org2">Org2 - Pharmaceutical</option>
+                                <option value="Org1">Org1 - Pharma1 (Manufacturer)</option>
+                                <option value="Org2">Org2 - Pharma2 (Manufacturer)</option>
+                                <option value="Org3">Org3 - Distributor (Cold Chain)</option>
+                                <option value="Org4">Org4 - Retailer (Hospital/Pharmacy)</option>
                             </select>
                         </div>
 

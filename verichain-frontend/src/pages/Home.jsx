@@ -12,7 +12,7 @@ export default function Home() {
             </div>
             <h1 className="hero-title">VeriChain</h1>
             <p className="hero-subtitle">
-                Verify the authenticity and journey of products across agricultural and pharmaceutical supply chains with blockchain-backed transparency.
+                Verify the authenticity and cold-chain compliance of pharmaceutical products with blockchain-backed ZK-proofs and real-time tracking.
             </p>
             <div className="hero-actions">
                 <Link to="/verify" className="btn btn-primary" style={{ padding: '1rem 2rem', fontSize: '1rem' }}>

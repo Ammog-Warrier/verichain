@@ -8,32 +8,48 @@ import Dashboard from './pages/Dashboard';
 import CreateAsset from './pages/CreateAsset';
 import AssetDetail from './pages/AssetDetail';
 import Verify from './pages/Verify';
+import BusinessPortal from './pages/BusinessPortal';
+import RetailerTerminal from './pages/RetailerTerminal';
+import PublicVerify from './pages/PublicVerify';
 import './index.css';
 
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <Header />
-        <main>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/verify" element={<Verify />} />
-            <Route path="/verify/:assetId" element={<Verify />} />
+        <Routes>
+          {/* Public Verification - No Header, Mobile-Optimized */}
+          <Route path="/public" element={<PublicVerify />} />
+          <Route path="/public/:batchId" element={<PublicVerify />} />
 
-            {/* Protected Routes */}
-            <Route element={<PrivateRoute />}>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/assets/:id" element={<AssetDetail />} />
-            </Route>
+          {/* Routes with Header */}
+          <Route path="*" element={
+            <>
+              <Header />
+              <main>
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/verify" element={<Verify />} />
+                  <Route path="/verify/:assetId" element={<Verify />} />
 
-            {/* Producer-Only Routes */}
-            <Route element={<ProducerRoute />}>
-              <Route path="/create" element={<CreateAsset />} />
-            </Route>
-          </Routes>
-        </main>
+                  {/* Protected Routes */}
+                  <Route element={<PrivateRoute />}>
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/assets/:id" element={<AssetDetail />} />
+                    <Route path="/portal" element={<BusinessPortal />} />
+                    <Route path="/retailer" element={<RetailerTerminal />} />
+                  </Route>
+
+                  {/* Producer-Only Routes */}
+                  <Route element={<ProducerRoute />}>
+                    <Route path="/create" element={<CreateAsset />} />
+                  </Route>
+                </Routes>
+              </main>
+            </>
+          } />
+        </Routes>
       </BrowserRouter>
     </AuthProvider>
   );

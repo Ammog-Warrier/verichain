@@ -6,18 +6,25 @@ const fs = require('fs');
 const path = require('path');
 const { getWallet } = require('../utils/wallet');
 const jwt = require('jsonwebtoken');
-const { SECRET_KEY } = require('../middleware/auth');
+const { SECRET_KEY, authenticateToken } = require('../middleware/auth');
+
+// Cookie options for JWT
+const COOKIE_OPTIONS = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 60 * 60 * 1000 // 1 hour
+};
 
 router.post('/register', async (req, res) => {
     const { orgName, userId, adminId, role } = req.body;
-    const userRole = role || 'client'; // Default to client if not specified
+    const userRole = role || 'client';
 
     if (!orgName || !userId || !adminId) {
         return res.status(400).json({ error: 'Missing required fields: orgName, userId, adminId' });
     }
 
     try {
-        // Load the network configuration
         const ccpPath = path.resolve(__dirname, '..', 'config', `connection-${orgName.toLowerCase()}.json`);
 
         if (!fs.existsSync(ccpPath)) {
@@ -26,31 +33,25 @@ router.post('/register', async (req, res) => {
 
         const ccp = JSON.parse(fs.readFileSync(ccpPath, 'utf8'));
 
-        // Create a new CA client for interacting with the CA.
         const caInfo = ccp.certificateAuthorities[`ca.${orgName.toLowerCase()}.example.com`];
         const caTLSCACerts = caInfo.tlsCACerts.pem;
         const ca = new FabricCAServices(caInfo.url, { trustedRoots: caTLSCACerts, verify: false }, caInfo.caName);
 
-        // Get the wallet
         const wallet = await getWallet();
 
-        // Check to see if we've already enrolled the user.
         const userIdentity = await wallet.get(userId);
         if (userIdentity) {
-            return res.status(409).json({ error: `An identity for the user "${userId}" already exists in the wallet` });
+            return res.status(409).json({ error: `User "${userId}" already exists` });
         }
 
-        // Check to see if we've already enrolled the admin user.
         const adminIdentity = await wallet.get(adminId);
         if (!adminIdentity) {
-            return res.status(404).json({ error: `An identity for the admin user "${adminId}" does not exist in the wallet` });
+            return res.status(404).json({ error: `Admin "${adminId}" not found` });
         }
 
-        // Build a user object for authenticating with the CA
         const provider = wallet.getProviderRegistry().getProvider(adminIdentity.type);
         const adminUser = await provider.getUserContext(adminIdentity, adminId);
 
-        // Register the user, enroll the user, and import the new identity into the wallet.
         const secret = await ca.register({
             affiliation: `${orgName.toLowerCase()}.department1`,
             enrollmentID: userId,
@@ -74,19 +75,17 @@ router.post('/register', async (req, res) => {
 
         await wallet.put(userId, x509Identity);
 
-        await wallet.put(userId, x509Identity);
-
-        // Generate JWT
         const token = jwt.sign({ userId, orgName, role: userRole }, SECRET_KEY, { expiresIn: '1h' });
+        res.cookie('token', token, COOKIE_OPTIONS);
 
         res.status(201).json({
-            message: `Successfully registered and enrolled user "${userId}"`,
-            token
+            message: `User "${userId}" registered successfully`,
+            user: { userId, orgName, role: userRole }
         });
 
     } catch (error) {
         console.error(`Failed to register user "${userId}": ${error}`);
-        res.status(500).json({ error: `Failed to register user: ${error.message}` });
+        res.status(500).json({ error: `Registration failed: ${error.message}` });
     }
 });
 
@@ -102,15 +101,9 @@ router.post('/login', async (req, res) => {
         const identity = await wallet.get(userId);
 
         if (!identity) {
-            return res.status(401).json({ error: 'User not found in wallet. Please register first.' });
+            return res.status(401).json({ error: 'User not found. Please register first.' });
         }
 
-        // TODO: Integrate with a secure password store or identity provider for password verification.
-        // Currently relying on wallet identity existence.
-
-        // We assume role is 'client' for existing users if not stored, 
-        // but ideally we should store user metadata separately.
-        // For now, let's default to 'client' or 'admin' if userId is 'admin' or 'OrgAdmin'.
         let role = 'client';
         if (userId.toLowerCase().includes('admin')) {
             role = 'admin';
@@ -126,12 +119,31 @@ router.post('/login', async (req, res) => {
 
         const token = jwt.sign({ userId, orgName, role }, SECRET_KEY, { expiresIn: '1h' });
 
-        res.json({ message: 'Login successful', token });
+        // Set HTTP-only cookie
+        res.cookie('token', token, COOKIE_OPTIONS);
+
+        // Also return token in body for backward compatibility
+        res.json({
+            message: 'Login successful',
+            token,
+            user: { userId, orgName, role }
+        });
 
     } catch (error) {
         console.error(`Login failed for "${userId}": ${error}`);
         res.status(500).json({ error: `Login failed: ${error.message}` });
     }
+});
+
+// Get current user from cookie
+router.get('/me', authenticateToken, (req, res) => {
+    res.json({ user: req.user });
+});
+
+// Logout - clear cookie
+router.post('/logout', (req, res) => {
+    res.clearCookie('token', COOKIE_OPTIONS);
+    res.json({ message: 'Logged out successfully' });
 });
 
 module.exports = router;

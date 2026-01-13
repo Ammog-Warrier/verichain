@@ -40,11 +40,6 @@ function PharmaView() {
             await assetsAPI.create(payload);
             console.log('Asset minted successfully');
 
-            // Store for retailer to see
-            const storedAssets = JSON.parse(localStorage.getItem(`verichain_assets_${user.orgName}`) || '[]');
-            storedAssets.unshift({ ...payload, ID: assetId });
-            localStorage.setItem(`verichain_assets_${user.orgName}`, JSON.stringify(storedAssets.slice(0, 50)));
-
             setSuccess(`Asset ${assetId} created successfully.`);
             setAssetId(`VAX-${Date.now().toString().slice(-6)}`);
         } catch (err) {

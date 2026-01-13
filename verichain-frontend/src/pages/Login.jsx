@@ -1,16 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { authAPI } from '../services/api';
-import { LogIn, User, Building2 } from 'lucide-react';
 
 const DEMO_ACCOUNTS = [
-    { label: 'Pharma1 Producer', userId: 'pharma1-cert', orgName: 'Org1' },
-    { label: 'Pharma2 Producer', userId: 'pharma2-cert', orgName: 'Org2' },
-    { label: 'Distributor (Org3)', userId: 'distributor-cert', orgName: 'Org3' },
-    { label: 'Retailer (Org4)', userId: 'retailer-cert', orgName: 'Org4' },
-    { label: 'Pharma1 Auditor', userId: 'auditor-org1-cert', orgName: 'Org1' },
-    { label: 'Pharma2 Auditor', userId: 'auditor-org2-cert', orgName: 'Org2' }
+    { label: 'Pharma1', userId: 'pharma1-cert', orgName: 'Org1' },
+    { label: 'Pharma2', userId: 'pharma2-cert', orgName: 'Org2' },
+    { label: 'Distributor', userId: 'distributor-cert', orgName: 'Org3' },
+    { label: 'Retailer', userId: 'retailer-cert', orgName: 'Org4' }
 ];
 
 export default function Login() {
@@ -21,17 +17,21 @@ export default function Login() {
     const navigate = useNavigate();
     const { login } = useAuth();
 
+    const getRedirectPath = (org) => {
+        if (org === 'Org4') return '/retailer';
+        return '/portal';
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError('');
 
         try {
-            const response = await authAPI.login(userId, orgName);
-            login(response.data.token);
-            navigate('/dashboard');
+            await login(userId, orgName);
+            navigate(getRedirectPath(orgName));
         } catch (err) {
-            setError(err.response?.data?.error || 'Login failed. Please try again.');
+            setError(err.response?.data?.error || 'Login failed');
         } finally {
             setLoading(false);
         }
@@ -44,11 +44,10 @@ export default function Login() {
         setError('');
 
         try {
-            const response = await authAPI.login(demo.userId, demo.orgName);
-            login(response.data.token);
-            navigate('/dashboard');
+            await login(demo.userId, demo.orgName);
+            navigate(getRedirectPath(demo.orgName));
         } catch (err) {
-            setError(err.response?.data?.error || 'Demo login failed.');
+            setError(err.response?.data?.error || 'Login failed');
         } finally {
             setLoading(false);
         }
@@ -71,10 +70,7 @@ export default function Login() {
 
                     <form onSubmit={handleSubmit}>
                         <div className="form-group">
-                            <label className="form-label">
-                                <User size={14} style={{ display: 'inline', marginRight: '0.5rem' }} />
-                                User ID
-                            </label>
+                            <label className="form-label">User ID</label>
                             <input
                                 type="text"
                                 className="form-input"
@@ -86,10 +82,7 @@ export default function Login() {
                         </div>
 
                         <div className="form-group">
-                            <label className="form-label">
-                                <Building2 size={14} style={{ display: 'inline', marginRight: '0.5rem' }} />
-                                Organization
-                            </label>
+                            <label className="form-label">Organization</label>
                             <select
                                 className="form-input"
                                 value={orgName}
@@ -103,7 +96,6 @@ export default function Login() {
                         </div>
 
                         <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
-                            <LogIn size={18} />
                             {loading ? 'Signing in...' : 'Sign In'}
                         </button>
                     </form>
@@ -112,13 +104,13 @@ export default function Login() {
                         <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textAlign: 'center', marginBottom: '1rem' }}>
                             Quick Demo Access
                         </p>
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                             {DEMO_ACCOUNTS.map((demo) => (
                                 <button
                                     key={demo.label}
                                     type="button"
                                     className="btn btn-secondary"
-                                    style={{ flex: 1, fontSize: '0.75rem' }}
+                                    style={{ flex: 1, fontSize: '0.75rem', minWidth: '80px' }}
                                     onClick={() => handleDemoLogin(demo)}
                                     disabled={loading}
                                 >

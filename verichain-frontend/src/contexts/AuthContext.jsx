@@ -1,49 +1,41 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { jwtDecode } from 'jwt-decode';
+import api, { authAPI } from '../services/api';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
-    const [token, setToken] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    // Check session via /api/me on mount
     useEffect(() => {
-        const storedToken = localStorage.getItem('verichain_token');
-        if (storedToken) {
+        const checkSession = async () => {
             try {
-                const decoded = jwtDecode(storedToken);
-                if (decoded.exp * 1000 > Date.now()) {
-                    setToken(storedToken);
-                    setUser({
-                        userId: decoded.userId,
-                        orgName: decoded.orgName,
-                        role: decoded.role
-                    });
-                } else {
-                    localStorage.removeItem('verichain_token');
-                }
+                const response = await api.get('/me');
+                setUser(response.data.user);
             } catch (err) {
-                localStorage.removeItem('verichain_token');
+                // Not logged in or session expired
+                setUser(null);
+            } finally {
+                setLoading(false);
             }
-        }
-        setLoading(false);
+        };
+        checkSession();
     }, []);
 
-    const login = (newToken) => {
-        localStorage.setItem('verichain_token', newToken);
-        setToken(newToken);
-        const decoded = jwtDecode(newToken);
-        setUser({
-            userId: decoded.userId,
-            orgName: decoded.orgName,
-            role: decoded.role
-        });
+    const login = async (userId, orgName) => {
+        const response = await authAPI.login(userId, orgName);
+        // Server sets HTTP-only cookie, we just need user data
+        setUser(response.data.user);
+        return response;
     };
 
-    const logout = () => {
-        localStorage.removeItem('verichain_token');
-        setToken(null);
+    const logout = async () => {
+        try {
+            await api.post('/logout');
+        } catch (err) {
+            // Ignore errors
+        }
         setUser(null);
     };
 
@@ -63,7 +55,7 @@ export function AuthProvider({ children }) {
     };
 
     return (
-        <AuthContext.Provider value={{ user, token, loading, login, logout, getCollection, isProducer }}>
+        <AuthContext.Provider value={{ user, loading, login, logout, getCollection, isProducer }}>
             {children}
         </AuthContext.Provider>
     );

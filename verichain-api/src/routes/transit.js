@@ -12,8 +12,10 @@ const router = express.Router();
 const { connectToNetwork } = require('../utils/gateway');
 const { authenticateToken } = require('../middleware/auth');
 const zkProof = require('../zkProofGenerator');
+const db = require('../db');
 
-// In-memory storage for transit logs (in production, use Redis or DB)
+// In-memory storage for active transit sessions (cleared on restart)
+// ZK proofs are persisted to PostgreSQL after generation
 const transitLogs = new Map();
 
 /**
@@ -155,6 +157,18 @@ router.post('/generate-proof', authenticateToken, async (req, res) => {
         transitData.proofGeneratedAt = new Date().toISOString();
         transitLogs.set(batchId, transitData);
 
+        // Store proof in PostgreSQL
+        try {
+            await db.query(
+                `INSERT INTO transit_proofs (batch_id, proof_hash, min_temp, max_temp, avg_temp, readings_count, in_range, verified)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                 ON CONFLICT (batch_id) DO UPDATE SET proof_hash = $2, verified = $8`,
+                [batchId, proofPackage.proofHash, transitData.stats.min, transitData.stats.max, transitData.stats.avg, 30, transitData.stats.inRange, proofPackage.verified]
+            );
+        } catch (dbError) {
+            console.warn('PostgreSQL insert failed (non-fatal):', dbError.message);
+        }
+
         res.status(200).json({
             success: true,
             batchId,
@@ -163,9 +177,8 @@ router.post('/generate-proof', authenticateToken, async (req, res) => {
             verified: proofPackage.verified,
             proofTimeMs: proofPackage.proofTimeMs,
             metadata: proofPackage.metadata,
-            // Note: For Shardeum anchoring, you would add the explorer link here
             explorerUrl: `https://explorer-mezame.shardeum.org/tx/${proofPackage.proofHash.slice(0, 66)}`,
-            message: 'ZK proof generated and verified. Ready for on-chain anchoring.'
+            message: 'ZK proof generated and verified.'
         });
 
     } catch (error) {

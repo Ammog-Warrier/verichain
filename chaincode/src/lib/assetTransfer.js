@@ -75,6 +75,8 @@ class AssetTransfer extends Contract {
         const asset = {
             ID: assetInput.ID,
             docType: 'pharma',
+            // Ownership
+            Owner: mspID.replace('MSP', ''), // e.g., 'Org1', 'Org2'
             // Drug Information
             drugName: assetInput.drugName || '',
             genericName: assetInput.genericName || '',
@@ -97,10 +99,11 @@ class AssetTransfer extends Contract {
         // Write to private data collection
         await ctx.stub.putPrivateData(collection, asset.ID, Buffer.from(stringify(sortKeysRecursive(asset))));
 
-        // Write public summary to world state
+        // Write public summary to world state (includes Owner for transfer tracking)
         const summary = {
             ID: asset.ID,
             docType: asset.docType,
+            Owner: asset.Owner,
             Status: asset.status,
             Collection: collection,
             Submitter: mspID
@@ -239,6 +242,35 @@ class AssetTransfer extends Contract {
             result = await iterator.next();
         }
         return JSON.stringify(results);
+    }
+
+    // GetAssetHistory returns the full transaction history for an asset
+    async GetAssetHistory(ctx, id) {
+        const iterator = await ctx.stub.getHistoryForKey(id);
+        const history = [];
+
+        let result = await iterator.next();
+        while (!result.done) {
+            const record = {
+                txId: result.value.txId,
+                timestamp: result.value.timestamp,
+                isDelete: result.value.isDelete
+            };
+
+            if (!result.value.isDelete) {
+                try {
+                    record.value = JSON.parse(result.value.value.toString('utf8'));
+                } catch (err) {
+                    record.value = result.value.value.toString('utf8');
+                }
+            }
+
+            history.push(record);
+            result = await iterator.next();
+        }
+
+        await iterator.close();
+        return JSON.stringify(history);
     }
 }
 

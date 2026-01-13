@@ -73,12 +73,13 @@ router.post('/', authenticateToken, async (req, res) => {
     }
 
     try {
-        // 1. Update asset status on Hyperledger Fabric (Source of Truth)
-        console.log(`Updating asset ${assetId} status to STOCKED on HLF...`);
+        // 1. Transfer ownership and update status on Hyperledger Fabric (Source of Truth)
+        console.log(`Transferring ownership of ${assetId} to Retailer...`);
         const { gateway, contract } = await connectToNetwork(orgName, userId);
 
+        await contract.submitTransaction('TransferAsset', assetId, 'Org4');
         await contract.submitTransaction('UpdateAssetStatus', assetId, 'STOCKED');
-        console.log(`Asset ${assetId} status updated on blockchain`);
+        console.log(`Asset ${assetId} transferred to Retailer, status: STOCKED`);
 
         await gateway.disconnect();
 
@@ -97,6 +98,7 @@ router.post('/', authenticateToken, async (req, res) => {
         res.status(201).json({
             message: 'Shipment accepted and recorded on blockchain',
             assetId,
+            owner: 'Org4',
             status: 'STOCKED'
         });
 

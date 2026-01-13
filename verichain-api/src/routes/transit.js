@@ -21,6 +21,7 @@ const transitLogs = new Map();
 /**
  * POST /api/transit/simulate
  * Simulate 30 IoT temperature readings for a batch during transit
+ * Also transfers ownership from Pharma to Distributor on the blockchain
  */
 router.post('/simulate', authenticateToken, async (req, res) => {
     const { batchId, scenario } = req.body;
@@ -38,7 +39,27 @@ router.post('/simulate', authenticateToken, async (req, res) => {
     }
 
     try {
-        // Generate 30 temperature readings based on scenario
+        // 1. Transfer ownership from Pharma to Distributor on HLF
+        console.log(`Transferring ownership of ${batchId} to Distributor...`);
+        const { gateway, contract } = await connectToNetwork(orgName, userId);
+
+        await contract.submitTransaction('TransferAsset', batchId, 'Org3');
+        await contract.submitTransaction('UpdateAssetStatus', batchId, 'IN_TRANSIT');
+        console.log(`Asset ${batchId} transferred to Distributor, status: IN_TRANSIT`);
+
+        await gateway.disconnect();
+
+        // 2. Update PostgreSQL cache
+        try {
+            await db.query(
+                'UPDATE assets SET status = $1 WHERE id = $2',
+                ['IN_TRANSIT', batchId]
+            );
+        } catch (dbErr) {
+            console.warn('PostgreSQL update failed (non-fatal):', dbErr.message);
+        }
+
+        // 3. Generate 30 temperature readings
         const temperatures = [];
         const timestamps = [];
         const now = Date.now();
@@ -47,25 +68,21 @@ router.post('/simulate', authenticateToken, async (req, res) => {
             let temp;
 
             if (scenario === 'breach') {
-                // Simulate a temperature breach scenario
                 if (i >= 15 && i <= 18) {
-                    temp = 8.5 + Math.random() * 2; // Breach: 8.5-10.5°C
+                    temp = 8.5 + Math.random() * 2;
                 } else {
-                    temp = 4 + Math.random() * 3; // Normal: 4-7°C
+                    temp = 4 + Math.random() * 3;
                 }
             } else {
-                // Normal scenario: all readings within range (2-8°C)
-                // Simulate variance around 5°C (optimal cold chain)
                 const baseTemp = 5;
-                const variance = (Math.random() - 0.5) * 4; // ±2°C
+                const variance = (Math.random() - 0.5) * 4;
                 temp = Math.max(2.1, Math.min(7.9, baseTemp + variance));
             }
 
             temperatures.push(parseFloat(temp.toFixed(1)));
-            timestamps.push(now - (30 - i) * 60000); // 1 reading per minute
+            timestamps.push(now - (30 - i) * 60000);
         }
 
-        // Calculate statistics
         const stats = {
             min: Math.min(...temperatures),
             max: Math.max(...temperatures),
@@ -73,7 +90,6 @@ router.post('/simulate', authenticateToken, async (req, res) => {
             inRange: temperatures.every(t => t >= 2 && t <= 8)
         };
 
-        // Store in memory for later proof generation
         const transitData = {
             batchId,
             temperatures,
@@ -92,6 +108,9 @@ router.post('/simulate', authenticateToken, async (req, res) => {
         res.status(200).json({
             success: true,
             batchId,
+            ownershipTransferred: true,
+            newOwner: 'Org3',
+            status: 'IN_TRANSIT',
             readings: temperatures.map((temp, i) => ({
                 temperature: temp,
                 timestamp: new Date(timestamps[i]).toISOString(),

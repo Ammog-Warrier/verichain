@@ -13,6 +13,7 @@ const { connectToNetwork } = require('../utils/gateway');
 const { authenticateToken } = require('../middleware/auth');
 const zkProof = require('../zkProofGenerator');
 const db = require('../db');
+const { notarizeToShardeum, getExplorerURL, getQRCodeURL } = require('../utils/shardeumBridge');
 
 // In-memory storage for active transit sessions (cleared on restart)
 // ZK proofs are persisted to PostgreSQL after generation
@@ -324,7 +325,10 @@ router.get('/public/:batchId', async (req, res) => {
             verifiedAt: new Date().toISOString(),
             message: isValid
                 ? `Batch ${batchId}: Certified Safe - Cold chain integrity verified by zero-knowledge cryptographic proof`
-                : 'Verification failed - please contact manufacturer'
+                : 'Verification failed - please contact manufacturer',
+            shardeumTxHash: transitData.shardeumTxHash,
+            shardeumExplorerUrl: transitData.shardeumExplorerUrl,
+            shardeumQrCodeUrl: transitData.shardeumQrCodeUrl
         });
 
     } catch (error) {
@@ -332,6 +336,49 @@ router.get('/public/:batchId', async (req, res) => {
             verified: false,
             error: 'Verification service error'
         });
+    }
+});
+
+
+// POST /api/transit/notarize - Bridge ZK proof to Shardeum
+router.post('/notarize', authenticateToken, async (req, res) => {
+    const { assetId, proofHash, isValid } = req.body;
+
+    if (!assetId || !proofHash) {
+        return res.status(400).json({ error: 'Missing required fields: assetId, proofHash' });
+    }
+
+    try {
+        // Call Shardeum Bridge
+        const txHash = await notarizeToShardeum(assetId, proofHash, isValid !== false);
+
+        if (!txHash) {
+            return res.status(503).json({ error: 'Shardeum bridge not configured or failed' });
+        }
+
+        const explorerUrl = getExplorerURL(txHash);
+        // Generate QR Code for the Batch ID (for easy scanning in the app)
+        const qrCodeUrl = getQRCodeURL(assetId);
+
+        // Update transitLogs
+        const transitData = transitLogs.get(assetId);
+        if (transitData) {
+            transitData.shardeumTxHash = txHash;
+            transitData.shardeumExplorerUrl = explorerUrl;
+            transitData.shardeumQrCodeUrl = qrCodeUrl;
+            transitLogs.set(assetId, transitData);
+        }
+
+        res.json({
+            message: 'Notarization successful',
+            txHash,
+            explorerUrl,
+            qrCodeUrl
+        });
+
+    } catch (error) {
+        console.error(`Notarization failed: ${error}`);
+        res.status(500).json({ error: `Notarization failed: ${error.message}` });
     }
 });
 

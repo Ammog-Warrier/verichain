@@ -123,6 +123,31 @@ The React frontend provides the user interface.
     ./query_ledger.sh VAX-001
     ```
 
+## 6. Shardeum Public Notary Bridge
+
+VeriChain includes a bridge to notarize ZK-proofs on the Shardeum Testnet.
+
+### Setup
+1.  **Deploy Contract:**
+    -   Open [Remix IDE](https://remix.ethereum.org/).
+    -   Create a new file `Notary.sol` and paste the content from `shardeum/Notary.sol`.
+    -   Compile and Deploy to **Shardeum Sphinx 1.X** (Injected Provider - MetaMask).
+    -   Copy the **Deployed Contract Address**.
+
+2.  **Configure API:**
+    -   Open `verichain-api/.env`.
+    -   Add your **Private Key** (with test SHM) and the **Contract Address**:
+        ```env
+        SHARDEUM_PRIVATE_KEY=your_private_key_here
+        SHARDEUM_CONTRACT_ADDRESS=0x...
+        ```
+    -   Restart the API: `npm start`.
+
+### Usage
+-   When you generate a ZK Proof (as Distributor), click the **"Notarize to Shardeum"** button (if implemented in UI) or call the API endpoint:
+    `POST /api/transit/notarize` with `{ "assetId": "...", "proofHash": "..." }`.
+-   The system will return a **Transaction Hash** and a **QR Code URL** pointing to the Shardeum Explorer.
+
 ## Troubleshooting
 
 -   **"Peer endorsements do not match":**

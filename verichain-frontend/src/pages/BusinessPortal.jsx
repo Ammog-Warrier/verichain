@@ -98,6 +98,8 @@ function DistributorView() {
     const [temperatureData, setTemperatureData] = useState([]);
     const [stats, setStats] = useState(null);
     const [proofResult, setProofResult] = useState(null);
+    const [notarizing, setNotarizing] = useState(false);
+    const [notarizationResult, setNotarizationResult] = useState(null);
     const [error, setError] = useState('');
     const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -110,7 +112,9 @@ function DistributorView() {
         setSimulating(true);
         setError('');
         setTemperatureData([]);
+        setTemperatureData([]);
         setProofResult(null);
+        setNotarizationResult(null);
         setCurrentIndex(0);
 
         try {
@@ -157,6 +161,23 @@ function DistributorView() {
             setError(err.response?.data?.error || 'Failed to generate proof');
         } finally {
             setGeneratingProof(false);
+        }
+    };
+
+    const handleNotarize = async () => {
+        setNotarizing(true);
+        setError('');
+        try {
+            const response = await transitAPI.notarize({
+                assetId: batchId,
+                proofHash: proofResult.proofHash,
+                isValid: proofResult.verified
+            });
+            setNotarizationResult(response.data);
+        } catch (err) {
+            setError(err.response?.data?.error || 'Notarization failed');
+        } finally {
+            setNotarizing(false);
         }
     };
 
@@ -249,6 +270,38 @@ function DistributorView() {
                             Generated in {proofResult.proofTimeMs}ms · Groth16 · Verified: {proofResult.verified ? 'Yes' : 'No'}
                         </div>
                     </div>
+
+                    {!notarizationResult && (
+                        <div style={{ marginTop: '1rem', borderTop: '1px solid rgba(0,0,0,0.1)', paddingTop: '1rem' }}>
+                            <button
+                                className="btn btn-secondary"
+                                onClick={handleNotarize}
+                                disabled={notarizing}
+                                style={{ width: '100%' }}
+                            >
+                                {notarizing ? 'Notarizing...' : 'Notarize to Shardeum'}
+                            </button>
+                        </div>
+                    )}
+
+                    {notarizationResult && (
+                        <div style={{ marginTop: '1rem', borderTop: '1px solid rgba(0,0,0,0.1)', paddingTop: '1rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-success)', fontWeight: 600 }}>
+                                <span>✓ Notarized on Shardeum</span>
+                            </div>
+                            <div style={{ marginTop: '0.5rem', fontSize: '0.875rem' }}>
+                                <a href={notarizationResult.explorerUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)' }}>
+                                    View Transaction ↗
+                                </a>
+                            </div>
+                            {notarizationResult.qrCodeUrl && (
+                                <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+                                    <img src={notarizationResult.qrCodeUrl} alt="Product QR" style={{ width: '120px', border: '1px solid #eee', borderRadius: '8px' }} />
+                                    <p style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.25rem' }}>Scan to Verify</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             )}
         </div>

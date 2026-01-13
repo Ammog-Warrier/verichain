@@ -41,7 +41,8 @@ export const transitAPI = {
     generateProof: (batchId) => api.post('/transit/generate-proof', { batchId }),
     verify: (batchId, proofHash) => api.post('/transit/verify', { batchId, proofHash }),
     getTransit: (batchId) => api.get(`/transit/${batchId}`),
-    publicVerify: (batchId) => api.get(`/transit/public/${batchId}`)
+    publicVerify: (batchId) => api.get(`/transit/public/${batchId}`),
+    notarize: (data) => api.post('/transit/notarize', data)
 };
 
 export const inventoryAPI = {

@@ -1,22 +1,52 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { transitAPI } from '../services/api';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 
 export default function PublicVerify() {
     const [batchId, setBatchId] = useState('');
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState(null);
     const [error, setError] = useState('');
+    const [scanning, setScanning] = useState(false);
 
-    const handleVerify = async (e) => {
+    useEffect(() => {
+        if (scanning) {
+            const scanner = new Html5QrcodeScanner(
+                "reader",
+                { fps: 10, qrbox: { width: 250, height: 250 } },
+                false
+            );
+
+            scanner.render(
+                (decodedText) => {
+                    setBatchId(decodedText);
+                    setScanning(false);
+                    scanner.clear();
+                    // Optional: Auto-verify
+                    // handleVerify(null, decodedText); 
+                },
+                (errorMessage) => {
+                    // parse error, ignore it.
+                }
+            );
+
+            return () => {
+                scanner.clear().catch(error => console.error("Failed to clear html5-qrcode scanner. ", error));
+            };
+        }
+    }, [scanning]);
+
+    const handleVerify = async (e, idOverride) => {
         e?.preventDefault();
-        if (!batchId.trim()) return;
+        const idToVerify = idOverride || batchId;
+        if (!idToVerify.trim()) return;
 
         setLoading(true);
         setError('');
         setResult(null);
 
         try {
-            const response = await transitAPI.publicVerify(batchId.trim());
+            const response = await transitAPI.publicVerify(idToVerify.trim());
             setResult(response.data);
         } catch (err) {
             if (err.response?.status === 404) {
@@ -39,11 +69,6 @@ export default function PublicVerify() {
         }
     };
 
-    const handleScanQR = () => {
-        // Placeholder for QR scanning
-        alert('QR Scanner would open here. For demo, enter Batch ID manually.');
-    };
-
     return (
         <div className="page">
             <div className="container" style={{ maxWidth: '600px' }}>
@@ -57,54 +82,70 @@ export default function PublicVerify() {
                     </p>
                 </div>
 
+                {/* Scanner UI */}
+                {scanning && (
+                    <div className="card" style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
+                        <div id="reader" width="100%"></div>
+                        <button
+                            className="btn btn-secondary"
+                            onClick={() => setScanning(false)}
+                            style={{ marginTop: '1rem' }}
+                        >
+                            Cancel Scan
+                        </button>
+                    </div>
+                )}
+
                 {/* Search Box */}
-                <div className="card" style={{ marginBottom: '1.5rem' }}>
-                    <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '0.5rem' }}>
-                        Verify Your Medicine
-                    </h2>
-                    <p style={{ color: 'var(--color-text-muted)', marginBottom: '1.5rem', fontSize: '0.875rem' }}>
-                        Enter the Batch ID from your medicine package to verify its authenticity and cold-chain compliance.
-                    </p>
+                {!scanning && (
+                    <div className="card" style={{ marginBottom: '1.5rem' }}>
+                        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+                            Verify Your Medicine
+                        </h2>
+                        <p style={{ color: 'var(--color-text-muted)', marginBottom: '1.5rem', fontSize: '0.875rem' }}>
+                            Enter the Batch ID from your medicine package to verify its authenticity and cold-chain compliance.
+                        </p>
 
-                    <form onSubmit={handleVerify}>
-                        <div className="form-group" style={{ marginBottom: '1rem' }}>
-                            <input
-                                type="text"
-                                value={batchId}
-                                onChange={(e) => setBatchId(e.target.value)}
-                                placeholder="Enter Batch ID (e.g., VAX-123456)"
-                                className="form-input"
-                                style={{ fontSize: '1rem' }}
-                            />
-                        </div>
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <button
-                                type="submit"
-                                className="btn btn-primary"
-                                disabled={loading || !batchId.trim()}
-                                style={{ flex: 1 }}
-                            >
-                                {loading ? 'Verifying...' : 'Verify'}
-                            </button>
-                            <button
-                                type="button"
-                                className="btn btn-secondary"
-                                onClick={handleScanQR}
-                            >
-                                Scan QR
-                            </button>
-                        </div>
-                    </form>
+                        <form onSubmit={handleVerify}>
+                            <div className="form-group" style={{ marginBottom: '1rem' }}>
+                                <input
+                                    type="text"
+                                    value={batchId}
+                                    onChange={(e) => setBatchId(e.target.value)}
+                                    placeholder="Enter Batch ID (e.g., VAX-123456)"
+                                    className="form-input"
+                                    style={{ fontSize: '1rem' }}
+                                />
+                            </div>
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <button
+                                    type="submit"
+                                    className="btn btn-primary"
+                                    disabled={loading || !batchId.trim()}
+                                    style={{ flex: 1 }}
+                                >
+                                    {loading ? 'Verifying...' : 'Verify'}
+                                </button>
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    onClick={() => setScanning(true)}
+                                >
+                                    Scan QR
+                                </button>
+                            </div>
+                        </form>
 
-                    {error && (
-                        <div className="alert alert-error" style={{ marginTop: '1rem' }}>
-                            {error}
-                        </div>
-                    )}
-                </div>
+                        {error && (
+                            <div className="alert alert-error" style={{ marginTop: '1rem' }}>
+                                {error}
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Result Display */}
-                {result && (
+                {result && !scanning && (
                     <div className="card" style={{
                         background: result.verified ? '#ecfdf5' : '#fef2f2',
                         borderColor: result.verified ? 'var(--color-success)' : 'var(--color-error)'
@@ -131,6 +172,24 @@ export default function PublicVerify() {
                                         Batch {result.batchId}
                                     </p>
                                 </div>
+
+                                {result.shardeumQrCodeUrl && (
+                                    <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                                        <img
+                                            src={result.shardeumQrCodeUrl}
+                                            alt="Product Verification QR"
+                                            style={{ width: '150px', height: '150px', marginBottom: '0.5rem', border: '1px solid #eee', padding: '5px', borderRadius: '8px' }}
+                                        />
+                                        <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>
+                                            Scan to Verify
+                                        </p>
+                                        <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                                            <a href={result.shardeumExplorerUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)', textDecoration: 'none' }}>
+                                                View on Shardeum Explorer ↗
+                                            </a>
+                                        </p>
+                                    </div>
+                                )}
 
                                 <div style={{ display: 'grid', gap: '0.75rem', marginBottom: '1.5rem' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>

@@ -12,7 +12,7 @@ if [ -z "$1" ]; then
 fi
 
 BATCH_ID="$1"
-CHANNEL="mychannel"
+CHANNEL="verichain-channel"
 CC_NAME="basic"
 
 echo "================================================"

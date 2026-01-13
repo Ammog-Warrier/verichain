@@ -204,7 +204,9 @@ class AssetTransfer extends Contract {
         const oldStatus = asset.Status || asset.status;
         asset.Status = newStatus;
         asset.status = newStatus;
-        asset.lastUpdated = new Date().toISOString();
+        const timestamp = ctx.stub.getTxTimestamp();
+        const date = new Date(timestamp.seconds.low * 1000);
+        asset.lastUpdated = date.toISOString();
         await ctx.stub.putState(id, Buffer.from(stringify(sortKeysRecursive(asset))));
         console.log(`Asset ${id} status updated: ${oldStatus} -> ${newStatus}`);
         return JSON.stringify({ id, oldStatus, newStatus });
@@ -216,7 +218,9 @@ class AssetTransfer extends Contract {
         const asset = JSON.parse(assetString);
         asset.proofHash = proofHash;
         asset.proofType = proofType || 'thermal_compliance';
-        asset.proofAnchoredAt = new Date().toISOString();
+        const timestamp = ctx.stub.getTxTimestamp();
+        const date = new Date(timestamp.seconds.low * 1000);
+        asset.proofAnchoredAt = date.toISOString();
         await ctx.stub.putState(id, Buffer.from(stringify(sortKeysRecursive(asset))));
         console.log(`Proof anchored on asset ${id}: ${proofHash.slice(0, 20)}...`);
         return JSON.stringify({ id, proofHash, proofType: asset.proofType });

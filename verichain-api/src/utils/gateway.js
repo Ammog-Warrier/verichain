@@ -37,7 +37,7 @@ async function connectToNetwork(orgName, userName) {
         const network = await gateway.getNetwork('verichain-channel');
 
         // Get the contract from the network - matches the deployed chaincode name
-        const contract = network.getContract('assetTransfer');
+        const contract = network.getContract('basic');
 
         return { gateway, network, contract };
 

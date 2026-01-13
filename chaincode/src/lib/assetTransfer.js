@@ -41,7 +41,7 @@ class AssetTransfer extends Contract {
     }
 
     // CreatePrivateAsset creates a new asset in a private data collection
-    // Supports both Agri (Org1) and Pharma (Org2) schemas
+    // Unified Pharma schema for competing pharmaceutical organizations
     async CreatePrivateAsset(ctx) {
         const transientData = ctx.stub.getTransient();
         if (transientData.size === 0) {
@@ -57,59 +57,53 @@ class AssetTransfer extends Contract {
 
         const mspID = ctx.clientIdentity.getMSPID();
         let collection = '';
-        let asset = {};
 
-        // Configure collections and schema based on MSP ID
+        // Map MSP to collection (4-org supply chain)
         if (mspID === 'Org1MSP') {
-            // Agriculture Schema
-            collection = 'AgriCollection';
-            asset = {
-                ID: assetInput.ID,
-                docType: 'agri',
-                cropType: assetInput.cropType || '',
-                variety: assetInput.variety || '',
-                harvestDate: assetInput.harvestDate || '',
-                farmLocation: assetInput.farmLocation || '',
-                farmerName: assetInput.farmerName || '',
-                quantity: Number(assetInput.quantity) || 0,
-                organicCertified: assetInput.organicCertified || false,
-                fertilizersUsed: assetInput.fertilizersUsed || '',
-                pesticideCompliance: assetInput.pesticideCompliance || '',
-                soilPH: Number(assetInput.soilPH) || 0,
-                estimatedValue: Number(assetInput.estimatedValue) || 0,
-                status: assetInput.status || 'HARVESTED'
-            };
+            collection = 'Pharma1Collection';
         } else if (mspID === 'Org2MSP') {
-            // Pharmaceutical Schema
-            collection = 'PharmaCollection';
-            asset = {
-                ID: assetInput.ID,
-                docType: 'pharma',
-                drugName: assetInput.drugName || '',
-                genericName: assetInput.genericName || '',
-                dosageForm: assetInput.dosageForm || '',
-                strength: assetInput.strength || '',
-                mfgDate: assetInput.mfgDate || '',
-                expiryDate: assetInput.expiryDate || '',
-                batchSize: Number(assetInput.batchSize) || 0,
-                manufacturer: assetInput.manufacturer || '',
-                facilityLocation: assetInput.facilityLocation || '',
-                labTestResult: assetInput.labTestResult || '',
-                cdscoLicenseNo: assetInput.cdscoLicenseNo || '',
-                productionCost: Number(assetInput.productionCost) || 0,
-                status: assetInput.status || 'MANUFACTURED'
-            };
+            collection = 'Pharma2Collection';
+        } else if (mspID === 'Org3MSP') {
+            collection = 'DistributorCollection';
+        } else if (mspID === 'Org4MSP') {
+            collection = 'RetailerCollection';
         } else {
-            throw new Error(`MSP ${mspID} is not authorized to create private assets in this workflow`);
+            throw new Error(`MSP ${mspID} is not authorized to create private assets`);
         }
+
+        // Unified Pharmaceutical Asset Schema
+        const asset = {
+            ID: assetInput.ID,
+            docType: 'pharma',
+            // Ownership
+            Owner: mspID.replace('MSP', ''), // e.g., 'Org1', 'Org2'
+            // Drug Information
+            drugName: assetInput.drugName || '',
+            genericName: assetInput.genericName || '',
+            dosageForm: assetInput.dosageForm || '',
+            strength: assetInput.strength || '',
+            // Manufacturing
+            manufacturer: assetInput.manufacturer || '',
+            facilityLocation: assetInput.facilityLocation || '',
+            batchSize: Number(assetInput.batchSize) || 0,
+            mfgDate: assetInput.mfgDate || '',
+            expiryDate: assetInput.expiryDate || '',
+            // Compliance
+            cdscoLicenseNo: assetInput.cdscoLicenseNo || '',
+            labTestResult: assetInput.labTestResult || '',
+            productionCost: Number(assetInput.productionCost) || 0,
+            // Status
+            status: assetInput.status || 'MANUFACTURED'
+        };
 
         // Write to private data collection
         await ctx.stub.putPrivateData(collection, asset.ID, Buffer.from(stringify(sortKeysRecursive(asset))));
 
-        // Write public summary to world state
+        // Write public summary to world state (includes Owner for transfer tracking)
         const summary = {
             ID: asset.ID,
             docType: asset.docType,
+            Owner: asset.Owner,
             Status: asset.status,
             Collection: collection,
             Submitter: mspID
@@ -202,6 +196,87 @@ class AssetTransfer extends Contract {
         }
         return JSON.stringify(allResults);
     }
+
+    // UpdateAssetStatus updates the status of an asset (e.g., MANUFACTURED -> IN_TRANSIT -> STOCKED)
+    async UpdateAssetStatus(ctx, id, newStatus) {
+        const assetString = await this.ReadAsset(ctx, id);
+        const asset = JSON.parse(assetString);
+        const oldStatus = asset.Status || asset.status;
+        asset.Status = newStatus;
+        asset.status = newStatus;
+        const timestamp = ctx.stub.getTxTimestamp();
+        const date = new Date(timestamp.seconds.low * 1000);
+        asset.lastUpdated = date.toISOString();
+        await ctx.stub.putState(id, Buffer.from(stringify(sortKeysRecursive(asset))));
+        console.log(`Asset ${id} status updated: ${oldStatus} -> ${newStatus}`);
+        return JSON.stringify({ id, oldStatus, newStatus });
+    }
+
+    // AnchorProofHash stores a ZK proof hash on an asset for verification
+    async AnchorProofHash(ctx, id, proofHash, proofType) {
+        const assetString = await this.ReadAsset(ctx, id);
+        const asset = JSON.parse(assetString);
+        asset.proofHash = proofHash;
+        asset.proofType = proofType || 'thermal_compliance';
+        const timestamp = ctx.stub.getTxTimestamp();
+        const date = new Date(timestamp.seconds.low * 1000);
+        asset.proofAnchoredAt = date.toISOString();
+        await ctx.stub.putState(id, Buffer.from(stringify(sortKeysRecursive(asset))));
+        console.log(`Proof anchored on asset ${id}: ${proofHash.slice(0, 20)}...`);
+        return JSON.stringify({ id, proofHash, proofType: asset.proofType });
+    }
+
+    // GetAssetsByStatus returns all assets with a specific status
+    async GetAssetsByStatus(ctx, status) {
+        const queryString = {
+            selector: {
+                Status: status
+            }
+        };
+        const iterator = await ctx.stub.getQueryResult(JSON.stringify(queryString));
+        const results = [];
+        let result = await iterator.next();
+        while (!result.done) {
+            const strValue = Buffer.from(result.value.value.toString()).toString('utf8');
+            try {
+                results.push(JSON.parse(strValue));
+            } catch (err) {
+                console.log(err);
+            }
+            result = await iterator.next();
+        }
+        return JSON.stringify(results);
+    }
+
+    // GetAssetHistory returns the full transaction history for an asset
+    async GetAssetHistory(ctx, id) {
+        const iterator = await ctx.stub.getHistoryForKey(id);
+        const history = [];
+
+        let result = await iterator.next();
+        while (!result.done) {
+            const record = {
+                txId: result.value.txId,
+                timestamp: result.value.timestamp,
+                isDelete: result.value.isDelete
+            };
+
+            if (!result.value.isDelete) {
+                try {
+                    record.value = JSON.parse(result.value.value.toString('utf8'));
+                } catch (err) {
+                    record.value = result.value.value.toString('utf8');
+                }
+            }
+
+            history.push(record);
+            result = await iterator.next();
+        }
+
+        await iterator.close();
+        return JSON.stringify(history);
+    }
 }
 
 module.exports = AssetTransfer;
+

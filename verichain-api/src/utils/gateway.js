@@ -4,6 +4,7 @@ const fs = require('fs');
 const { getWallet } = require('./wallet');
 
 async function connectToNetwork(orgName, userName) {
+    console.log(`Wallet path: ${path.resolve(__dirname, '..', 'wallet')}`);
     try {
         // Load the network configuration
         const ccpPath = path.resolve(__dirname, '..', 'config', `connection-${orgName.toLowerCase()}.json`);
@@ -26,13 +27,17 @@ async function connectToNetwork(orgName, userName) {
 
         // Create a new gateway for connecting to our peer node.
         const gateway = new Gateway();
-        await gateway.connect(ccp, { wallet, identity: userName, discovery: { enabled: false, asLocalhost: true } });
+        await gateway.connect(ccp, {
+            wallet,
+            identity: userName,
+            discovery: { enabled: true, asLocalhost: true }
+        });
 
         // Get the network (channel) our contract is deployed to.
         const network = await gateway.getNetwork('verichain-channel');
 
-        // Get the contract from the network.
-        const contract = network.getContract('verichain-contract');
+        // Get the contract from the network - matches the deployed chaincode name
+        const contract = network.getContract('basic');
 
         return { gateway, network, contract };
 
@@ -43,3 +48,4 @@ async function connectToNetwork(orgName, userName) {
 }
 
 module.exports = { connectToNetwork };
+

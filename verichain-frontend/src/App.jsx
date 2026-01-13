@@ -1,13 +1,9 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import Header from './components/Header';
-import { PrivateRoute, ProducerRoute } from './components/ProtectedRoute';
+import { PrivateRoute } from './components/ProtectedRoute';
 import Home from './pages/Home';
 import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import CreateAsset from './pages/CreateAsset';
-import AssetDetail from './pages/AssetDetail';
-import Verify from './pages/Verify';
 import BusinessPortal from './pages/BusinessPortal';
 import RetailerTerminal from './pages/RetailerTerminal';
 import PublicVerify from './pages/PublicVerify';
@@ -30,21 +26,18 @@ function App() {
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/login" element={<Login />} />
-                  <Route path="/verify" element={<Verify />} />
-                  <Route path="/verify/:assetId" element={<Verify />} />
 
                   {/* Protected Routes */}
                   <Route element={<PrivateRoute />}>
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/assets/:id" element={<AssetDetail />} />
                     <Route path="/portal" element={<BusinessPortal />} />
                     <Route path="/retailer" element={<RetailerTerminal />} />
                   </Route>
 
-                  {/* Producer-Only Routes */}
-                  <Route element={<ProducerRoute />}>
-                    <Route path="/create" element={<CreateAsset />} />
-                  </Route>
+                  {/* Redirect old routes to portal */}
+                  <Route path="/dashboard" element={<Navigate to="/portal" replace />} />
+                  <Route path="/create" element={<Navigate to="/portal" replace />} />
+                  <Route path="/verify" element={<Navigate to="/public" replace />} />
+                  <Route path="/verify/:assetId" element={<Navigate to="/public" replace />} />
                 </Routes>
               </main>
             </>

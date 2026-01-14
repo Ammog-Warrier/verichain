@@ -1,0 +1,7 @@
+# Git Submodules Configuration
+# Add submodules here when needed
+# Example:
+# [submodule "fabric-samples"]
+#     path = fabric-samples
+#     url = https://github.com/hyperledger/fabric-samples.git
+#     branch = main

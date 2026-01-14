@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Build outputs
+dist/
+build/
+coverage/
+
+# Hyperledger Fabric artifacts
+organizations/peerOrganizations/
+organizations/ordererOrganizations/
+channel-artifacts/
+system-genesis-block/
+*.block
+bin/
+
+# Generated files
+*.min.js
+*.min.css
+
+# Config
+.env
+.env.local
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/

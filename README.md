@@ -212,3 +212,19 @@ verichain-network/
 ├── setup_verichain.sh      # Main Network Orchestrator
 └── docker-compose.yml      # Container Definitions
 ```
+
+
+---
+
+## 🏆 Hackathon Recognition
+
+VeriChain was developed at **Defy 2026** (VIT Chennai Blockchain Hackathon), where it emerged as a premier solution in a high-competition field.
+
+* **Top Finalist**: Ranked among the overall top-performing teams.
+* **1st Place Winner**: Secured the **ThinkRoot Special Category** award for excellence for the use of ThinkRoot in our devolopment.
+
+**The Developers:**
+* [Ammog Warrier](https://github.com/Ammog-Warrier)
+* [Venkataraman T S K](https://github.com/TSKVenkat)
+* [Kushvinth Madhavan](https://github.com/kushvinth)
+* [Ashwin S](https://github.com/Ashwin-973)
